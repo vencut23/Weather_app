@@ -1,11 +1,33 @@
+import 'dart:convert';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_application_2/additionalinfo.dart';
-import 'package:flutter_application_2/hourcard.dart';
+import 'package:flutter_application_1/additionalinfo.dart';
+import 'package:flutter_application_1/hourcard.dart';
+import 'package:http/http.dart' as http;
 
-class Weather extends StatelessWidget {
+class Weather extends StatefulWidget {
   const Weather({super.key});
+
+  @override
+  State<Weather> createState() => _WeatherState();
+}
+
+class _WeatherState extends State<Weather> {
+  double temp=0;
+ @override
+  void initState() {
+    super.initState();
+    gettemp();
+  }
+  Future gettemp() async{
+    final res= await http.get(Uri.parse('https://api.openweathermap.org/data/2.5/forecast?q=London,uk&APPID=491e1cbf54e90cdb5128a32b98b12502'));
+    
+    final data=jsonDecode(res.body);
+    setState(() {
+     temp=data['list'][0]['main']['temp'];
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -15,11 +37,10 @@ class Weather extends StatelessWidget {
         centerTitle: true,
         actions: [
           IconButton(onPressed: (){
-            print('hello refresh');
           }, icon: const Icon(Icons.refresh)),
         ],
       ),
-        body: Padding(
+        body: temp==0 ? Center(child: CircularProgressIndicator()): Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -35,12 +56,12 @@ class Weather extends StatelessWidget {
                         borderRadius: const BorderRadius.all(Radius.circular(16)),
                         child: BackdropFilter(
                           filter: ImageFilter.blur(sigmaX: 10,sigmaY: 10),
-                          child: const Padding(
+                          child:  Padding(
                             padding: EdgeInsets.all(8.0),
                             child: Column(
                               children: [
-                                Text('Tempereature',
-                                style: TextStyle(
+                                Text('${temp}',
+                                style: const TextStyle(
                                     fontWeight: FontWeight.w700,
                                     fontSize: 30,
                                     color: Colors.white70,
