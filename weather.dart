@@ -1,10 +1,11 @@
 import 'dart:convert';
 import 'dart:ui';
+
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
-import 'package:weather_app/additionalinfo.dart';
-import 'package:weather_app/hourcard.dart';
+import 'package:flutter_application_1/additionalinfo.dart';
+import 'package:flutter_application_1/hourcard.dart';
 import 'package:http/http.dart' as http;
+import 'package:intl/intl.dart';
 
 class Weather extends StatefulWidget {
   const Weather({super.key});
@@ -14,25 +15,20 @@ class Weather extends StatefulWidget {
 }
 
 class _WeatherState extends State<Weather> {
-  double temp=0;
+  late Future<Map<String,dynamic>> weather; 
  @override
   void initState() {
     super.initState();
-    gettemp();
+    weather=gettemp();
   }
   Future<Map<String,dynamic>> gettemp() async{
-    final data;
-    try{
     final res= await http.get(Uri.parse('https://api.openweathermap.org/data/2.5/forecast?q=London,uk&APPID=491e1cbf54e90cdb5128a32b98b12502'));
     
-    data=jsonDecode(res.body);
-   // data['list'][0]['main']['temp'];
-    if(data['code']!='200'){
-      throw 'unKnown error';
-    }
-    }catch(e){
-      throw 'An unexcepted error here';
-    }
+    final data=jsonDecode(res.body);
+    // temp=data['list'][0]['main']['temp'];
+    // if(data['code']!='200'){
+    //   throw 'unKnown error';
+    // }
     return data;
   }
 
@@ -44,25 +40,27 @@ class _WeatherState extends State<Weather> {
         centerTitle: true,
         actions: [
           IconButton(onPressed: (){
+            setState(() { 
+               weather=gettemp();
+            });
           }, icon: const Icon(Icons.refresh)),
         ],
       ),
         body: FutureBuilder(
-          future: gettemp(),
+          future: weather,
           builder:(context, snapshot) {
             if(snapshot.connectionState==ConnectionState.waiting){
-              return const Center(child: CircularProgressIndicator.adaptive());
+              return const Center(child: CircularProgressIndicator());
             }
             if(snapshot.hasError){
-              return Text(snapshot.error.toString());
+              return const Text('An error occured');
             }
-            print(snapshot);
-            final data=snapshot.data!;
-            final currenttemp=data['list'][0]['main'][temp];
-            final currentsky=data['list'][0]['weather'][0]['main'];
-            final currenthumidity= data['list'][0]['main']['humidity'];
-            final currentwind=data['list'][0]['wind']['speed'];
-            final currentpressure= data['list'][0]['main']['pressure'];
+             final data=snapshot.data!;
+             final currtemp=data['list'][0]['main']['temp'];
+             final currsky=data['list'][0]['weather'][0]['main'];
+             final currpressure=data['list'][0]['main']['pressure'];
+             final currhumidity=data['list'][0]['main']['humidity'];
+             final currwind=data['list'][0]['wind']['speed'];
             return Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
@@ -80,10 +78,10 @@ class _WeatherState extends State<Weather> {
                           child: BackdropFilter(
                             filter: ImageFilter.blur(sigmaX: 10,sigmaY: 10),
                             child:  Padding(
-                              padding: EdgeInsets.all(8.0),
+                              padding: const EdgeInsets.all(8.0),
                               child: Column(
                                 children: [
-                                  Text('${currenttemp} K',
+                                  Text('$currtemp',
                                   style: const TextStyle(
                                       fontWeight: FontWeight.w700,
                                       fontSize: 30,
@@ -93,15 +91,14 @@ class _WeatherState extends State<Weather> {
                                   const SizedBox(
                                        height: 20,
                                   ),
-                                  Icon(currentsky=='Clouds'||currentsky=='Rain'? 
-                                  Icons.cloud:Icons.sunny,
+                                  Icon(currsky=='Rain'||currsky=='Cloud'? Icons.water_drop: currsky=='Snow'? Icons.snowing:Icons.sunny,
                                     color: Colors.white70,
                                     size: 50,
                                   ),
                                   const SizedBox(
                                     height: 20,
                                   ),
-                                  Text('$currentsky',
+                                  Text('$currsky',
                                   style: const TextStyle(
                                       fontWeight: FontWeight.w400,
                                       fontSize: 20,
@@ -122,32 +119,30 @@ class _WeatherState extends State<Weather> {
                        fontSize: 20,
                      ),
                 ),
-                //  SingleChildScrollView(
-                //   scrollDirection: Axis.horizontal,
-                //   child:  Row(
-                //       children: [
-                //          for(int i=0;i<5;i++)
-                //                hourcard(time: data[i+1]['dt'].toString(), 
-                //                         value: data[i+1]['main'][temp].toString(), 
-                //                          icon: data[i+1]['weather'][0]['main'].toString() == 'Clouds'? Icons.cloud:Icons.sunny,
-                //                         ),
-                //       ],
-                //   ),
-                // ),
+                /* const SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child:  Row(
+                      children: [
+                        hourcard(time: '9:00', value: '300', icon: Icons.cloud),
+                        hourcard(time: '9:00', value: '300', icon: Icons.beach_access),
+                        hourcard(time: '9:00', value: '300', icon: Icons.air),
+                        hourcard(time: '9:00', value: '300', icon: Icons.cloud),
+                        hourcard(time: '9:00', value: '300', icon: Icons.beach_access),
+                        hourcard(time: '9:00', value: '300', icon: Icons.air),
+                      ],
+                  ),
+                ), */
                 SizedBox(
-                  height: 200,
+                  height: 125,
                   child: ListView.builder(
+                    itemCount: 20,
                     scrollDirection: Axis.horizontal,
-                    itemCount: 5,
-                    itemBuilder: 
-                       (context,index){
-                        final currtime=DateTime.parse(data[index+1]['dt_txt'].toString());
-                            return  hourcard(time: DateFormat.j().format(currtime), 
-                                          value: data[index+1]['main'][temp].toString(), 
-                                           icon: data[index+1]['weather'][0]['main'].toString() == 'Clouds'
-                                           ||data[index+1]['weather'][0]['main'].toString() == 'Rain'? Icons.cloud:Icons.sunny,
-                                          );
-                       }
+                    itemBuilder: (context, index) {
+                       final currtime=data['list'][index]['dt_txt'];
+                       final currsky=data['list'][index]['weather'][0]['main'];
+                       final date=DateTime.parse(currtime.toString());
+                        return hourcard(time: DateFormat.j().format(date).toString(), value: currsky.toString(), icon: currsky=='Rain'||currsky=='Clouds'? Icons.cloud:currsky=='Snow'?Icons.snowboarding:Icons.sunny);
+                    },
                   ),
                 ),
                 const SizedBox(height: 20,),
@@ -158,21 +153,21 @@ class _WeatherState extends State<Weather> {
                    ),
                 ),
                 const SizedBox(height: 16,),
-                Row(
+                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
                     additionalinfo(
-                      value: currenthumidity.toString(),
+                      value: currhumidity.toString(),
                       icon: Icons.water_drop,
                       name: 'Humidity',
                     ),
                     additionalinfo(
-                      value:  currentwind.toString(),
+                      value: currwind.toString(),
                       icon: Icons.air,
                       name: 'Wind Speed',
                     ),
                     additionalinfo(
-                      value: currentpressure.toString(),
+                      value: currpressure.toString(),
                       icon: Icons.beach_access,
                       name: 'Pressure',
                     ),
@@ -186,4 +181,3 @@ class _WeatherState extends State<Weather> {
     );
   }
 }
-
