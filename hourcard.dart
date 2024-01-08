@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 
 class hourcard extends StatelessWidget {
@@ -23,6 +22,8 @@ class hourcard extends StatelessWidget {
                                 fontWeight: FontWeight.w300,
                                 fontSize: 20,
                                ),
+                               overflow: TextOverflow.ellipsis,
+                               maxLines: 1,
                                ),
                                const SizedBox(height: 8,),
                                Icon(icon),
